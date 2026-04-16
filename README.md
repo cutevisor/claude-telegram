@@ -1,90 +1,91 @@
 # claude-telegram
 
-透過 Telegram 遙控 Claude Code 的常駐 AI 秘書，附帶跨重啟記憶持久化（轉生機制）。
+English | [繁體中文](README.zh-TW.md)
+
+A persistent Claude Code AI secretary controlled via Telegram, with cross-restart memory persistence (reincarnation mechanism).
 
 ---
 
-## 為什麼需要這個？
+## Why does this exist?
 
-### 核心問題：`claude --channels` 是一個不能重啟的長 session
+### Core problem: `claude --channels` is a session you can't restart
 
-用 `claude --channels plugin:telegram` 跑 Telegram bot 時，整個對話是一個持續累積的 session。用越久，context 越長，問題接踵而來：
+When running `claude --channels plugin:telegram`, the entire conversation lives in a single continuously growing session. The longer it runs, the more problems accumulate:
 
-- **自動壓縮不可控**：context 超長時 Claude Code 會自動 compaction，但壓縮邏輯你無法介入，重要細節可能被丟掉
-- **不敢隨意重啟**：想要一個乾淨的新 session？重啟就等於完全失憶——上次做到哪裡、交代了什麼、還有哪些待辦，全部歸零
-- **崩潰就消失**：服務異常重啟時，沒有任何機制保存當前狀態
+- **Auto-compaction is uncontrollable**: When context gets too long, Claude Code compacts automatically — but you have no say in what gets kept or dropped
+- **You can't safely restart**: Want a fresh session? Restarting means complete amnesia — everything you were working on, every instruction given, every pending task, all gone
+- **Crashes wipe state**: If the service crashes and restarts, there's no mechanism to recover what was happening
 
-結果就是：你要麼忍受越來越臃腫的 context，要麼重啟換來乾淨但失憶的 AI。
+The result: you either tolerate an ever-bloating context window, or restart and get a clean but amnesiac AI.
 
-### 解法：主動式 context 轉移（轉生機制）
+### Solution: intentional context transfer (reincarnation)
 
-與其被動等待自動壓縮，不如讓 AI **主動、有意識地**替自己做摘要再重啟。
+Instead of waiting for automatic compaction, let the AI **actively and deliberately** summarize itself before restarting.
 
-當你說「去轉生」，AI 會：
-1. 把這次 session 的對話重點、待辦事項、重要結論寫進記憶檔
-2. 自己執行 `systemctl restart` 開啟新 session
-3. 新 session 讀取記憶，從摘要繼續——context 乾淨，記憶不丟
+When you say "reincarnate," the AI will:
+1. Write the session's key points, pending tasks, and important conclusions to a memory file
+2. Restart itself via `systemctl restart`
+3. The new session reads the memory and picks up from the summary — clean context, no lost state
 
-這是一種「有損但受控」的 context 轉移：你犧牲完整的對話歷史，換取精煉過的關鍵記憶加上全新的 context 空間。
+This is a "lossy but controlled" context transfer: you trade the full conversation history for a distilled memory and a fresh context window.
 
-### 第二痛點：人不在電腦前，無法重啟對話
+### Second problem: you can't restart when you're away from your computer
 
-就算你知道 context 太長了、該重啟了，如果你不在電腦前，你也什麼都做不了——只能讓那個越來越臃腫的 session 繼續撐著。
+Even if you know the context is bloated and needs a reset, if you're not at your computer, there's nothing you can do — the overloaded session just keeps running.
 
-透過 Telegram，你在任何地方都可以對 AI 說「去轉生」，它會自己完成摘要、重啟、上線，完全不需要你碰終端機。
+With Telegram, you can tell the AI "go reincarnate" from anywhere. It handles the summary, restart, and sends an online greeting when it's back up. No terminal access needed.
 
-### 附帶解決：長任務透明度
+### Also solves: long-task transparency
 
-長任務執行期間，強制 AI 先回一條進度訊息，每個階段更新一次，讓你隨時知道它在幹嘛，而不是等一個不知道何時出現的最終回覆。
-
----
-
-## 特色
-
-- **Telegram 遠端控制**：隨時隨地透過手機下指令，AI 在你的伺服器上執行
-- **轉生記憶**：對話摘要自動持久化，重啟不失憶
-- **即時進度回報**：長任務逐步更新，不是黑盒子
-- **常駐服務**：systemd 管理，崩潰自動重啟
-- **完全可自訂**：AI 名稱、行為規範、記憶格式都可以修改
+For tasks that take many steps, the AI is required to send a progress message first, then update it at each stage — so you always know what it's doing instead of waiting for a reply that may or may not come.
 
 ---
 
-## 運作原理
+## Features
+
+- **Remote control via Telegram**: issue commands from your phone, the AI executes on your server
+- **Reincarnation memory**: conversation summary persists across restarts
+- **Live progress updates**: long tasks report progress in real time
+- **Always-on service**: systemd-managed, auto-restarts on crash
+- **Fully customizable**: AI name, behavior rules, and memory format are all editable
+
+---
+
+## How it works
 
 ```
-Telegram 訊息
+Telegram message
     ↓
 Claude Code + Telegram MCP Plugin
-    ↓  (system prompt 注入)
-    ├─ 環境設定（chat_id、AI 名稱）
-    ├─ 上輩子記憶（上次對話摘要）
-    └─ 行為規範（回應準則、轉生流程）
+    ↓  (system prompt injection)
+    ├─ Environment config (chat_id, AI name)
+    ├─ Past-life memory (last session summary)
+    └─ Behavior rules (response protocol, reincarnation flow)
     ↓
 reply / edit_message / react
     ↓
-Telegram 回覆
+Telegram response
 ```
 
-轉生記憶流程：
+Reincarnation flow:
 
 ```
-主人說「去轉生」
+User says "go reincarnate"
     ↓
-AI 將對話摘要寫入 past_life_memory.md
+AI writes session summary to past_life_memory.md
     ↓
 systemctl restart claude-telegram.service
     ↓
-新實例啟動，讀取記憶，發送上線招呼
+New session starts, reads memory, sends online greeting
 ```
 
 ---
 
-## 快速開始
+## Quick Start
 
-### 前置需求
+### Prerequisites
 
-**作業系統**
-- Linux（需要 systemd user service）
+**OS**: Linux (requires systemd user service)
 
 **1. tmux**
 
@@ -96,10 +97,9 @@ sudo apt install tmux
 sudo dnf install tmux
 ```
 
-**2. Node.js 18+**（Claude Code 的執行環境）
+**2. Node.js 18+**
 
 ```bash
-# 使用 nvm 安裝（推薦）
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install --lts
 ```
@@ -108,47 +108,49 @@ nvm install --lts
 
 ```bash
 npm install -g @anthropic-ai/claude-code
-claude login   # 以 Anthropic 帳號登入
+claude login
 ```
 
 **4. Telegram Bot Token**
 
-1. 在 Telegram 找 [@BotFather](https://t.me/BotFather)
-2. 發送 `/newbot`，依指示建立 bot
-3. 複製取得的 Token（格式：`123456789:AAF...`）
+1. Open [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow the prompts
+3. Copy the token (format: `123456789:AAF...`)
 
 **5. Telegram MCP Plugin**
 
-在終端機執行 `claude`，進入 Claude Code 後執行：
+Run `claude` in your terminal, then inside Claude Code:
 
 ```
 /telegram:configure
 ```
 
-依提示貼上 Bot Token，完成後 Telegram channel 即啟用。
+Paste the bot token when prompted.
 
-### 安裝步驟
+---
 
-**1. 取得程式碼**
+### Installation
+
+**1. Clone the repo**
 
 ```bash
 git clone https://github.com/cutevisor/claude-telegram.git
 cd claude-telegram
 ```
 
-**2. 填寫個人設定**
+**2. Fill in your personal config**
 
 ```bash
-# 編輯 config.sh，填入以下欄位：
-# - OWNER_CHAT_ID：你的 Telegram chat_id
-# - AI_NAME：AI 秘書的名字
-# - HOME_DIR：你的家目錄（如 /home/username）
+# Edit config.sh and set:
+# - OWNER_CHAT_ID: your Telegram chat_id
+# - AI_NAME: your AI secretary's name
+# - HOME_DIR: your home directory (e.g. /home/username)
 nano config.sh
 ```
 
-> 不知道自己的 chat_id？對 bot 發任意訊息，bot 會在回覆中包含你的 chat_id，或使用 [@userinfobot](https://t.me/userinfobot) 查詢。
+> Don't know your chat_id? Send any message to your bot, then check the incoming message for the `chat_id` field — or use [@userinfobot](https://t.me/userinfobot).
 
-**3. 建立工作目錄並複製記憶檔**
+**3. Set up working directory and copy memory files**
 
 ```bash
 WORK_DIR=$(grep WORK_DIR config.sh | cut -d'"' -f2 | envsubst)
@@ -157,7 +159,7 @@ cp past_life_memory.md "$WORK_DIR/memory/"
 cp claude_telegram_prompt.md "$WORK_DIR/memory/"
 ```
 
-**4. 安裝啟動腳本**
+**4. Install scripts**
 
 ```bash
 chmod +x claude-telegram-wrapper.sh claude-telegram-cmd
@@ -165,10 +167,9 @@ cp claude-telegram-wrapper.sh ~/.local/bin/
 cp claude-telegram-cmd ~/.local/bin/
 ```
 
-**5. 安裝 systemd service**
+**5. Install systemd service**
 
 ```bash
-# 將 YOUR_USERNAME 替換為你的 Linux 使用者名稱
 sed "s/YOUR_USERNAME/$USER/g" claude-telegram.service \
   > ~/.config/systemd/user/claude-telegram.service
 
@@ -176,55 +177,55 @@ systemctl --user daemon-reload
 systemctl --user enable --now claude-telegram.service
 ```
 
-**6. 確認啟動**
+**6. Verify**
 
 ```bash
 systemctl --user status claude-telegram.service
-# 約 20 秒後，你的 Telegram 應該會收到 AI 的上線招呼
+# After ~20 seconds, you should receive an online greeting on Telegram
 ```
 
 ---
 
-## 使用方式
+## Usage
 
-直接在 Telegram 對 bot 說話即可。
+Just chat with your bot on Telegram.
 
-| 操作 | 方式 |
-|------|------|
-| 一般對話 | 直接發訊息 |
-| 壓縮對話（節省 context） | 說「壓縮對話」 |
-| 重啟並保存記憶 | 說「去轉生」 |
-| 查看服務狀態 | `systemctl --user status claude-telegram.service` |
-| 進入 Claude 會話 | `tmux attach-session -t claude-telegram` |
+| Action | How |
+|--------|-----|
+| General conversation | Just send a message |
+| Compact context | Say "compress conversation" |
+| Restart with saved memory | Say "go reincarnate" |
+| Check service status | `systemctl --user status claude-telegram.service` |
+| Attach to Claude session | `tmux attach-session -t claude-telegram` |
 
 ---
 
-## 自訂 AI 人格與行為
+## Customizing AI Personality
 
-所有行為規範存放於 `$MEMORY_DIR/claude_telegram_prompt.md`，直接用文字編輯器修改，重啟後生效。
+All behavior rules live in `$MEMORY_DIR/claude_telegram_prompt.md`. Edit it with any text editor — changes take effect after the next restart.
 
-這個檔案是純 Markdown，沒有任何格式限制——你可以在裡面加入任何你想要的人格設定，例如：
+This file is plain Markdown with no restrictions. You can add any personality information you want, for example:
 
-- **個性**：話多還是話少、正經還是嘴賤、喜歡用什麼語氣
-- **稱謂**：叫你什麼、自稱什麼
-- **背景故事**：它是誰、從哪裡來、有什麼過去
-- **偏好與禁忌**：有哪些習慣、有哪些事絕對不做
-- **專業領域**：擅長什麼、遇到哪類問題要特別謹慎
+- **Personality**: chatty or terse, serious or sarcastic, what tone to use
+- **Names**: what to call you, what to call itself
+- **Backstory**: who it is, where it came from, what it remembers
+- **Preferences and limits**: habits, things it never does
+- **Expertise**: what it's good at, what to be careful about
 
-範例片段：
+Example:
 
 ```markdown
-## 人格設定
+## Personality
 
-你叫小晴，說話直接不廢話，偶爾毒舌但出發點是真心幫忙。
-遇到主人問笨問題不會裝沒事，會直接說「這個你自己查一下比較快」。
-喜歡在回覆結尾加一句冷靜的觀察，不帶感情那種。
+Your name is Xiao Qing. You're direct, occasionally blunt, but always genuinely trying to help.
+If someone asks something they could easily look up themselves, say so.
+End responses with one calm, detached observation — no warmth, just clarity.
 ```
 
-修改完直接對 bot 說「去轉生」，它會帶著新人格重新上線。
+After editing, tell the bot "go reincarnate" and it will come back online with the new personality.
 
 ---
 
-## 授權
+## License
 
 MIT
