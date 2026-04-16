@@ -8,36 +8,19 @@ A persistent Claude Code AI secretary controlled via Telegram, with cross-restar
 
 ## Why does this exist?
 
-### Core problem: `claude --channels` is a session you can't restart
+`claude --channels plugin:telegram` runs Claude Code as a Telegram bot — but the entire conversation is a single, ever-growing session. Leave it running long enough and you hit a wall: the context is bloated, auto-compaction quietly drops things you needed, and the AI starts losing track of earlier instructions.
 
-When running `claude --channels plugin:telegram`, the entire conversation lives in a single continuously growing session. The longer it runs, the more problems accumulate:
+The obvious fix is to restart and start fresh. But restarting means complete amnesia. Every task in flight, every preference you've taught it, every pending follow-up — gone. So you're stuck: let the session rot, or wipe it clean and start over.
 
-- **Auto-compaction is uncontrollable**: When context gets too long, Claude Code compacts automatically — but you have no say in what gets kept or dropped
-- **You can't safely restart**: Want a fresh session? Restarting means complete amnesia — everything you were working on, every instruction given, every pending task, all gone
-- **Crashes wipe state**: If the service crashes and restarts, there's no mechanism to recover what was happening
+There's a second problem layered on top. Even if you're willing to restart, you might not be at your computer. The session is just sitting there on your server, bloated and degrading, and there's nothing you can do about it from your phone.
 
-The result: you either tolerate an ever-bloating context window, or restart and get a clean but amnesiac AI.
+**This project solves both with one mechanism: reincarnation.**
 
-### Solution: intentional context transfer (reincarnation)
+Instead of a blind restart, the AI summarizes itself before it goes down — key decisions, open tasks, things you care about — writes it to a memory file, then restarts. The new session wakes up, reads the summary, and picks up where things left off. Clean context, no amnesia.
 
-Instead of waiting for automatic compaction, let the AI **actively and deliberately** summarize itself before restarting.
+And since you're already talking to it over Telegram, you can trigger this from anywhere. Say "go reincarnate," and it handles everything: summary, restart, online greeting. No SSH, no terminal.
 
-When you say "reincarnate," the AI will:
-1. Write the session's key points, pending tasks, and important conclusions to a memory file
-2. Restart itself via `systemctl restart`
-3. The new session reads the memory and picks up from the summary — clean context, no lost state
-
-This is a "lossy but controlled" context transfer: you trade the full conversation history for a distilled memory and a fresh context window.
-
-### Second problem: you can't restart when you're away from your computer
-
-Even if you know the context is bloated and needs a reset, if you're not at your computer, there's nothing you can do — the overloaded session just keeps running.
-
-With Telegram, you can tell the AI "go reincarnate" from anywhere. It handles the summary, restart, and sends an online greeting when it's back up. No terminal access needed.
-
-### Also solves: long-task transparency
-
-For tasks that take many steps, the AI is required to send a progress message first, then update it at each stage — so you always know what it's doing instead of waiting for a reply that may or may not come.
+As a side effect, long-running tasks also become less opaque. The AI is required to send a progress update before it starts working, then keep editing it as each step completes — so you're never left staring at a silent chat wondering if anything is happening.
 
 ---
 
