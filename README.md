@@ -135,11 +135,19 @@ nano config.sh
 
 **3. Set up working directory and copy memory files**
 
+Pick the language you want the AI to use, then copy the corresponding files:
+
 ```bash
 WORK_DIR=$(grep WORK_DIR config.sh | cut -d'"' -f2 | envsubst)
 mkdir -p "$WORK_DIR/memory"
-cp past_life_memory.md "$WORK_DIR/memory/"
-cp claude_telegram_prompt.md "$WORK_DIR/memory/"
+
+# English
+cp past_life_memory.en.md "$WORK_DIR/memory/past_life_memory.md"
+cp claude_telegram_prompt.en.md "$WORK_DIR/memory/claude_telegram_prompt.md"
+
+# Traditional Chinese
+# cp past_life_memory.md "$WORK_DIR/memory/past_life_memory.md"
+# cp claude_telegram_prompt.md "$WORK_DIR/memory/claude_telegram_prompt.md"
 ```
 
 **4. Install scripts**
@@ -186,6 +194,15 @@ Just chat with your bot on Telegram.
 ## Customizing AI Personality
 
 All behavior rules live in `$MEMORY_DIR/claude_telegram_prompt.md`. Edit it with any text editor — changes take effect after the next restart.
+
+The repo includes both language versions as starting points:
+
+| File | Language |
+|------|----------|
+| `claude_telegram_prompt.en.md` | English |
+| `claude_telegram_prompt.md` | Traditional Chinese |
+| `past_life_memory.en.md` | English |
+| `past_life_memory.md` | Traditional Chinese |
 
 This file is plain Markdown with no restrictions. You can add any personality information you want, for example:
 

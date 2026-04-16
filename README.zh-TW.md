@@ -138,8 +138,14 @@ nano config.sh
 ```bash
 WORK_DIR=$(grep WORK_DIR config.sh | cut -d'"' -f2 | envsubst)
 mkdir -p "$WORK_DIR/memory"
-cp past_life_memory.md "$WORK_DIR/memory/"
-cp claude_telegram_prompt.md "$WORK_DIR/memory/"
+
+# 繁體中文
+cp past_life_memory.md "$WORK_DIR/memory/past_life_memory.md"
+cp claude_telegram_prompt.md "$WORK_DIR/memory/claude_telegram_prompt.md"
+
+# English
+# cp past_life_memory.en.md "$WORK_DIR/memory/past_life_memory.md"
+# cp claude_telegram_prompt.en.md "$WORK_DIR/memory/claude_telegram_prompt.md"
 ```
 
 **4. 安裝啟動腳本**
@@ -187,6 +193,15 @@ systemctl --user status claude-telegram.service
 ## 自訂 AI 人格與行為
 
 所有行為規範存放於 `$MEMORY_DIR/claude_telegram_prompt.md`，直接用文字編輯器修改，重啟後生效。
+
+本專案提供中英文兩套起始範本：
+
+| 檔案 | 語言 |
+|------|------|
+| `claude_telegram_prompt.md` | 繁體中文 |
+| `claude_telegram_prompt.en.md` | English |
+| `past_life_memory.md` | 繁體中文 |
+| `past_life_memory.en.md` | English |
 
 這個檔案是純 Markdown，沒有任何格式限制——你可以在裡面加入任何你想要的人格設定，例如：
 
