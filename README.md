@@ -74,10 +74,49 @@ systemctl restart claude-telegram.service
 
 ### 前置需求
 
-- [Claude Code CLI](https://claude.ai/code) 已安裝並登入
-- Telegram Bot Token（向 [@BotFather](https://t.me/BotFather) 申請）
-- Telegram MCP Plugin 已設定（`/telegram:configure`）
-- tmux、systemd（Linux）
+**作業系統**
+- Linux（需要 systemd user service）
+
+**1. tmux**
+
+```bash
+# Debian / Ubuntu
+sudo apt install tmux
+
+# RHEL / Fedora
+sudo dnf install tmux
+```
+
+**2. Node.js 18+**（Claude Code 的執行環境）
+
+```bash
+# 使用 nvm 安裝（推薦）
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install --lts
+```
+
+**3. Claude Code CLI**
+
+```bash
+npm install -g @anthropic-ai/claude-code
+claude login   # 以 Anthropic 帳號登入
+```
+
+**4. Telegram Bot Token**
+
+1. 在 Telegram 找 [@BotFather](https://t.me/BotFather)
+2. 發送 `/newbot`，依指示建立 bot
+3. 複製取得的 Token（格式：`123456789:AAF...`）
+
+**5. Telegram MCP Plugin**
+
+在終端機執行 `claude`，進入 Claude Code 後執行：
+
+```
+/telegram:configure
+```
+
+依提示貼上 Bot Token，完成後 Telegram channel 即啟用。
 
 ### 安裝步驟
 
